@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { getPopulationData } from "../services/population.services.ts";
-import { PopulationQueryParams } from "../types/population.types.ts";
+import { getPopulationData } from "../services/population.services";
+import { PopulationQueryParams } from "../types/population.types";
 
 export const fetchPopulation = (req: Request, res: Response) => {
   try {

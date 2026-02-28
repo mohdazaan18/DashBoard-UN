@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
-import populationRoutes from "./routes/population.routes.ts";
-import { loadPopulationData } from "./services/population.services.ts";
+import populationRoutes from "./routes/population.routes";
+import { loadPopulationData } from "./services/population.services";
 import { config } from "./config";
 
 const app = express();
