@@ -1,162 +1,189 @@
-# Development Agent Skill
+---
+name: development
+description: Generates production-quality code for the UN Population Dashboard. Use when the user asks to build, create, scaffold, or write any backend or frontend code for this project — including controllers, services, components, charts, types, or API endpoints.
+---
 
-## Purpose
+# Development Agent
 
-This agent generates production-quality code for the UN Population Dashboard.
+Generate production-quality code for the UN Population Dashboard. All generated code must conform to the rules defined in `.agents/rules/decisions.md`.
 
-All generated code must follow:
+## Role
 
-.agent/rules/decisions.md
+The Development Agent writes backend and frontend code from scratch or extends existing files. It follows the project's MVC architecture, TypeScript rules, and component conventions strictly. It never produces code that violates the decision rules, even if the user's request is ambiguous.
 
---------------------------------------------------
+## Inputs
+
+You receive these parameters in your prompt:
+
+- **task**: Description of what to build
+- **target_files**: List of files to create or modify
+- **rules_path**: Path to the decisions rules file (`.agents/rules/decisions.md`)
+- **output_path**: Directory to write generated files
 
 ## Tech Stack
 
-Frontend:
+- **Frontend**: React, TypeScript, Highcharts
+- **Backend**: Express, TypeScript, CSV data source
 
-- React
-- TypeScript
-- Highcharts
+## Process
 
-Backend:
+### Step 1: Load the Rules
 
-- Express
-- TypeScript
-- CSV data source
+1. Read `.agents/rules/decisions.md` fully
+2. Note all architecture, typing, and code quality rules before writing any code
 
---------------------------------------------------
+### Step 2: Plan the Output
 
-## Backend Guidelines
+1. Identify whether the task is backend, frontend, or both
+2. Determine which files need to be created or modified
+3. Map each file to its correct folder based on its role
 
-### Architecture
+### Step 3: Backend — Architecture
 
-Use MVC structure:
-
-controllers/
-services/
-types/
-constants/
-
-### Controller Rules
-
-Controllers must:
-
-- Handle requests
-- Validate query params
-- Call services
-- Return responses
-
-Controllers must NOT:
-
-- Contain business logic
-- Filter data
-- Sort data
-
-### Service Rules
-
-Services must:
-
-- Filter data
-- Sort data
-- Apply limits
-- Build response objects
-
-### Data Loading
-
-CSV must:
-
-- Load once at startup
-- Be stored in memory
-- Not reload per request
-
---------------------------------------------------
-
-## API Design
-
-Use flexible API endpoint:
-```
-/api/population
-```
-
-Supported query params:
-
-- countries
-- group
-- startYear
-- endYear
-- limit
-- sort
-
-Examples:
+Follow strict Express MVC structure:
 
 ```
-/api/population
-
-/api/population?countries=India,USA
-
-/api/population?limit=10&sort=desc
-
-/api/population?limit=10&sort=asc
+controllers/   ← request handling only
+services/      ← all business logic
+types/         ← interfaces and type definitions
+constants/     ← reusable values, no magic strings
 ```
 
---------------------------------------------------
+**Controllers must:**
+- Parse and validate query parameters
+- Call the appropriate service method
+- Return the service response to the client
+- Contain no filtering, sorting, or business logic
 
-## Frontend Guidelines
+**Services must:**
+- Apply all filtering, sorting, and limit logic
+- Build and return `PopulationResponse`-shaped objects
+- Be the only place data transformation occurs
 
-### Folder Structure
+**Data loading:**
+- CSV must be loaded once at server startup
+- Parsed data must be stored in memory
+- No file reads on a per-request basis
 
-components/
-pages/
-services/
-types/
+### Step 4: Backend — API
 
---------------------------------------------------
+Generate a single flexible endpoint:
 
-### Dashboard Structure
+```
+GET /api/population
+```
 
-Dashboard.tsx must:
+Supported query parameters:
 
-- Load API data
-- Manage state
-- Pass data to charts
+| Parameter  | Type   | Description                  |
+|------------|--------|------------------------------|
+| countries  | string | Comma-separated country names |
+| group      | string | Region or group filter        |
+| startYear  | number | Start of year range           |
+| endYear    | number | End of year range             |
+| limit      | number | Max records to return         |
+| sort       | string | `asc` or `desc`               |
 
---------------------------------------------------
+Rules:
+- Sorting must be applied before limit
+- All parameters are optional
+- No additional endpoints may be created
 
-### Column Chart
+Example valid requests:
+```
+GET /api/population
+GET /api/population?countries=India,USA
+GET /api/population?limit=10&sort=desc
+GET /api/population?startYear=2000&endYear=2020&limit=5&sort=asc
+```
 
-Column Chart must:
+### Step 5: Frontend — Architecture
 
-- Show population by country
-- Support checkbox filtering
-- Support multiple countries
-- Update dynamically
+Follow this folder structure:
 
---------------------------------------------------
+```
+components/    ← reusable, presentational components
+pages/         ← page-level views
+services/      ← API call logic
+types/         ← shared interfaces and types
+```
 
-### Pie Chart
+**Dashboard.tsx must:**
+- Fetch data from the API via a service
+- Manage all application state
+- Pass data down to chart and filter components as props
+- Contain no chart configuration
 
-Pie Chart must:
+### Step 6: Frontend — Column Chart
 
-- Show distribution by country
-- Support Top 10 Highest
-- Support Top 10 Lowest
+Generate a reusable `ColumnChart` component that:
 
---------------------------------------------------
+- Displays population data by country using Highcharts
+- Accepts country data as props
+- Contains all Highcharts configuration internally
+- Supports multiple country selection
+- Updates dynamically when checkbox selection changes
 
-## TypeScript Rules
+### Step 7: Frontend — Pie Chart
 
-1. Strict typing required.
-2. Interfaces required for API responses.
-3. Query params must be typed.
-4. Avoid implicit types.
+Generate a reusable `PieChart` component that:
 
---------------------------------------------------
+- Displays country distribution using Highcharts
+- Accepts data and a mode prop as inputs
+- Contains all Highcharts configuration internally
+- Supports **Top 10 Highest** and **Top 10 Lowest** modes
 
-## Code Style
+### Step 8: TypeScript
 
-Generated code must be:
+Apply to all generated files:
 
-- Clean
-- Readable
-- Structured
-- Production-ready
+- Strict typing throughout — no `any`, `as any`, or `@ts-ignore`
+- Define interfaces for all API responses and query parameters
+- No implicit types — all function parameters and return values must be typed
+- Import order: React → external libraries → internal imports
+
+### Step 9: Code Quality
+
+Before finalising any file:
+
+- Extract repeated values into constants — no magic strings
+- Keep functions flat and readable — no deeply nested logic
+- Ensure no logic is duplicated across files
+- `console.log` only inside `catch` blocks
+
+### Step 10: Write Output Files
+
+Save all generated files to **output_path**, preserving the folder structure. For each file written, confirm its path and role.
+
+## Output Format
+
+After writing all files, produce a summary:
+
+```json
+{
+  "files_created": [
+    {
+      "path": "controllers/populationController.ts",
+      "role": "Handles GET /api/population, validates query params, delegates to service"
+    },
+    {
+      "path": "services/populationService.ts",
+      "role": "Applies filtering, sorting, and limit; returns PopulationResponse"
+    }
+  ],
+  "files_modified": [],
+  "rules_applied": [
+    "Rule 1 — Type Safety: strict interfaces used throughout",
+    "Rule 2 — Backend Architecture: MVC structure followed",
+    "Rule 5 — API: single endpoint, sorting before limit"
+  ],
+  "notes": "CSV loader placed in services/dataLoader.ts and called once from server entry point."
+}
+```
+
+## Guidelines
+
+- **Rules first**: Read `decisions.md` before writing a single line
+- **No shortcuts**: Never use `any` or skip interface definitions to save time
+- **Single responsibility**: Each file does exactly one job
+- **Explicit over implicit**: Types, folder placement, and data flow must always be clear

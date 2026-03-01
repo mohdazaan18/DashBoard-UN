@@ -2,143 +2,111 @@
 trigger: always_on
 ---
 
+---
+name: decisions
+scope: global
+enforced: always
+---
+
 # Agent Decision Rules
 
-These rules are mandatory and must always be enforced.
+These rules are mandatory and must be enforced on all generated and reviewed code.
+Violations must be reported with: file name, rule violated, explanation, and suggested fix.
 
-All generated and reviewed code must follow these rules.
+---
 
---------------------------------------------------
+## Rule 1 — Type Safety
 
-## 1. Type Safety Rules
+- Strict TypeScript typing is required at all times
+- `any`, `as any`, and `@ts-ignore` are forbidden
+- All API responses must be typed with interfaces
+- All query parameters must use typed interfaces
 
-1. Strict TypeScript typing required
-2. No use of `any`
-3. No `@ts-ignore`
-4. No `as any`
-5. Interfaces must be used for API responses
-6. Query parameters must use typed interfaces
+---
 
---------------------------------------------------
+## Rule 2 — Backend Architecture
 
-## 2. Backend Architecture Rules
+Structure must follow Express MVC:
 
-1. Express MVC structure must be followed:
+```
+controllers/   ← thin, no business logic
+services/      ← all filtering and business logic
+types/
+constants/
+```
 
-- controllers/
-- services/
-- types/
-- constants/
+- CSV data must be loaded **once** at server startup
+- A single flexible endpoint is required: `GET /api/population`
+- Supported query parameters: `countries`, `group`, `startYear`, `endYear`, `limit`, `sort`
+- All responses must conform to the `PopulationResponse` interface
 
-2. Controllers must be thin and contain no business logic.
+---
 
-3. All filtering logic must be inside services.
+## Rule 3 — Frontend Architecture
 
-4. CSV must be loaded once at server startup.
+- React functional components only
+- Structure must follow:
 
-5. API must use a single flexible endpoint: ```/api/population```
+```
+components/    ← reusable, presentational
+pages/
+services/
+types/
+```
 
-6. Filtering must use query parameters:
+- Charts must be reusable components with configuration defined inside them
+- Dashboard logic must stay inside `Dashboard.tsx`
 
-- countries
-- group
-- startYear
-- endYear
-- limit
-- sort
+---
 
-7. API responses must follow PopulationResponse format.
+## Rule 4 — Charts
 
---------------------------------------------------
+- Highcharts must be used for all charts
+- Two supported chart types:
+  - **Column Chart** — country comparison with multiple selection, checkbox filtering, and dynamic updates
+  - **Pie Chart** — top 10 highest or top 10 lowest countries distribution
 
-## 3. Frontend Architecture Rules
+---
 
-1. React functional components only.
+## Rule 5 — API
 
-2. Components must be separated:
+- One endpoint only: `GET /api/population`
+- No duplicate endpoints
+- Sorting must be applied **before** limit is applied
 
-- components/
-- pages/
-- services/
-- types/
+---
 
-3. Charts must be reusable components.
+## Rule 6 — Code Quality
 
-4. Chart configuration must be inside chart components.
+- Reusable hard-coded values must be extracted to constants
+- No magic strings repeated across files
+- Functions must be readable and flat — no deeply nested logic
 
-5. Dashboard logic must stay inside Dashboard.tsx.
+---
 
---------------------------------------------------
+## Rule 7 — Logging
 
-## 4. Chart Rules
+- `console.log` is allowed **only** inside `catch` blocks
 
-1. Highcharts must be used for all charts.
+---
 
-2. Supported charts:
+## Rule 8 — Import Order
 
-- Column Chart (country comparison)
-- Pie Chart (top countries distribution)
-
-3. Column Chart must support:
-
-- Multiple country selection
-- Checkbox filtering
-- Dynamic updates
-
-4. Pie Chart must support:
-
-- Top 10 highest countries
-- Top 10 lowest countries
-
---------------------------------------------------
-
-## 5. API Rules
-
-1. Only one endpoint allowed: ```/api/population```
-
-2. API must remain flexible.
-
-3. No duplicate endpoints allowed.
-
-4. Sorting must be applied before limit.
-
---------------------------------------------------
-
-## 6. Code Quality Rules
-
-1. Hard-coded values must be constants when reusable.
-
-2. No magic strings repeated across files.
-
-3. Functions must remain readable.
-
-4. No deeply nested logic.
-
---------------------------------------------------
-
-## 7. Logging Rules
-
-1. console.log allowed only inside catch blocks.
-
---------------------------------------------------
-
-## 8. Import Rules
-
-Import order:
+Imports must follow this order:
 
 1. React imports
 2. External libraries
 3. Internal imports
 
---------------------------------------------------
+---
 
-## Enforcement
+## Violation Report Format
 
-Violations must include:
+When a violation is found, report it as:
 
-- File name
-- Rule violated
-- Explanation
-- Suggested fix
-
-
+```
+File:        <filename>
+Rule:        <rule number and name>
+Violation:   <what is wrong>
+Fix:         <suggested correction>
+```

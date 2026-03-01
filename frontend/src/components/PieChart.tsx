@@ -12,12 +12,15 @@ export const PieChart = ({ data }: Props) => {
             type: "pie",
             backgroundColor: "transparent",
             style: { fontFamily: "inherit" },
+            height: "100%",
+            spacing: [10, 10, 10, 10], // top, right, bottom, left
         },
         title: {
             text: "Top Countries Ratio",
-            style: { color: "#f8fafc", fontSize: "18px", fontWeight: "700" },
-            align: "left",
-            margin: 30
+            style: { color: "#f8fafc", fontSize: "15px", fontWeight: "700", letterSpacing: "0.5px" },
+            align: "center",
+            margin: 10,
+            y: 20
         },
         tooltip: {
             backgroundColor: "rgba(15, 23, 42, 0.95)",
@@ -25,32 +28,57 @@ export const PieChart = ({ data }: Props) => {
             borderRadius: 12,
             style: { color: "#f8fafc" },
             headerFormat: "",
-            pointFormat: '<span style="color:{point.color}; font-size: 16px;">\u25CF</span> <b>{point.name}</b><br/><span style="color:#cbd5e1">Population:</span> <b>{point.y}</b><br/><span style="color:#cbd5e1">Share:</span> <b>{point.percentage:.1f}%</b>'
+            formatter: function () {
+                const val = Number(this.y);
+                const formattedValue = val >= 1000000
+                    ? (val / 1000000).toFixed(1) + "M"
+                    : val >= 1000
+                        ? (val / 1000).toFixed(1) + "K"
+                        : String(val);
+
+                return `<span style="color:${this.color}; font-size: 16px;">\u25CF</span> <b>${this.key}</b><br/>` +
+                    `<span style="color:#cbd5e1">Population:</span> <b style="font-size: 14px;">${formattedValue}</b> ` +
+                    `<span style="color:#64748b; font-size: 11px;">(${this.y?.toLocaleString()})</span><br/>` +
+                    `<span style="color:#cbd5e1">Share:</span> <b>${this.percentage?.toFixed(1)}%</b>`;
+            }
         },
         plotOptions: {
             pie: {
                 allowPointSelect: true,
                 cursor: 'pointer',
+                shadow: false, // removed glitchy shadow effect
+                center: ['50%', '50%'],
+                size: '80%',
                 dataLabels: {
                     enabled: true,
-                    format: '<b>{point.name}</b><br/>{point.percentage:.1f} %',
-                    style: {
-                        color: "#e2e8f0",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        textOutline: "none" // removes the default white stroke
+                    distance: 10,
+                    formatter: function () {
+                        const val = Number(this.y);
+                        const formattedValue = val >= 1000000
+                            ? (val / 1000000).toFixed(1) + "M"
+                            : val >= 1000
+                                ? (val / 1000).toFixed(1) + "K"
+                                : String(val);
+
+                        return `<b>${this.key}</b><br/>${formattedValue} (${this.percentage?.toFixed(1)}%)`;
                     },
-                    connectorColor: "#475569"
+                    style: {
+                        color: "#f1f5f9",
+                        fontSize: "10px",
+                        fontWeight: "600",
+                        textOutline: "none",
+                        letterSpacing: "0.2px"
+                    },
+                    connectorColor: "#64748b",
+                    connectorWidth: 1
                 },
-                borderColor: "transparent", // remove white border
-                borderWidth: 0,
+                borderColor: "#0f172a", // add dark borders between slices to match bg
+                borderWidth: 2,
                 states: {
                     hover: {
                         halo: {
-                            size: 9,
-                            attributes: {
-                                fill: 'rgba(255, 255, 255, 0.1)'
-                            }
+                            size: 10,
+                            attributes: { fill: 'rgba(255, 255, 255, 0.15)' }
                         }
                     }
                 }
@@ -64,7 +92,9 @@ export const PieChart = ({ data }: Props) => {
         series: [{
             name: "Population",
             type: "pie",
-            innerSize: '65%', // High-end donut chart look
+            innerSize: '50%',
+            size: '75%', // Shrink slightly to avoid label clipping again
+            center: ['50%', '50%'], // Reset center now that MiniGauge takes the bottom space
             data: data.series.map(s => ({
                 name: s.name,
                 y: s.data[s.data.length - 1]
@@ -73,9 +103,12 @@ export const PieChart = ({ data }: Props) => {
     };
 
     return (
-        <HighchartsReact
-            highcharts={Highcharts}
-            options={options}
-        />
+        <div className="absolute inset-x-2 inset-y-2 flex items-center justify-center">
+            <HighchartsReact
+                highcharts={Highcharts}
+                options={options}
+                containerProps={{ style: { height: "100%", width: "100%" } }}
+            />
+        </div>
     );
 };

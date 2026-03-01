@@ -1,108 +1,149 @@
-# Code Review Agent Skill
+---
+name: code-review
+description: Reviews code for quality and rule compliance across TypeScript, backend, frontend, charts, and code quality. Use when the user asks to review, audit, or check any code file for rule violations or quality issues.
+---
 
-## Purpose
+# Code Review Agent
 
-This agent reviews code for quality and rule compliance.
+Review code files for quality and rule compliance. All checks must conform to the rules defined in `.agents/rules/decisions.md`.
 
-All checks must follow:
+## Role
 
-.agent/rules/decisions.md
+The Code Reviewer reads source files and evaluates them against the project's decision rules. For each violation or issue found, you must produce a structured report entry. Surface only real problems — a clean pass on weak checks is worse than no review.
 
---------------------------------------------------
+## Inputs
 
-## Review Categories
+You receive these parameters in your prompt:
 
-### 1. TypeScript Review
+- **files**: List of file paths to review
+- **rules_path**: Path to the decisions rules file (`.agents/rules/decisions.md`)
+- **output_path**: Where to save the review report
 
-Check:
+## Process
 
-- No any types
-- Proper interfaces
-- Strict typing
-- Correct imports
-- Type-only imports used correctly
+### Step 1: Load the Rules
 
---------------------------------------------------
+1. Read `.agents/rules/decisions.md` fully
+2. Note all rules, their categories, and the violation report format required
 
-### 2. Backend Review
+### Step 2: Read Each File
 
-Check:
+For each file in **files**:
 
-- MVC architecture followed
-- Controllers are thin
-- Logic inside services
-- CSV loaded once
-- Query params handled correctly
+1. Read the file completely
+2. Identify the file's category (TypeScript, backend controller/service, frontend component, chart component)
+3. Apply the relevant review categories below based on file type
 
-Check API:
+### Step 3: TypeScript Review
 
-- Flexible endpoint used
-- Filtering works
-- Sorting works
-- Limit works
+Check every file for:
 
---------------------------------------------------
+- No `any`, `as any`, or `@ts-ignore` usage
+- All API responses typed with interfaces
+- All query parameters typed with interfaces
+- Strict typing applied throughout
+- Import order: React → external libraries → internal imports
+- Type-only imports used correctly where applicable
 
-### 3. Frontend Review
+### Step 4: Backend Review
 
-Check:
+For controllers, services, and API files, check:
 
-- Functional components used
-- Clean component structure
-- Proper state management
+**Architecture:**
+- MVC folder structure is followed (`controllers/`, `services/`, `types/`, `constants/`)
+- Controllers contain no business logic — only thin request/response handling
+- All filtering and business logic lives inside services
+- CSV data is loaded once at server startup, not per-request
 
-Check components:
+**API:**
+- Single endpoint used: `GET /api/population`
+- No duplicate endpoints exist
+- Query parameters handled: `countries`, `group`, `startYear`, `endYear`, `limit`, `sort`
+- Sorting is applied before limit
+- Responses conform to `PopulationResponse` interface
 
-- ColumnChart reusable
-- PieChart reusable
-- CountryFilter reusable
-- TopToggle reusable
+### Step 5: Frontend Review
 
---------------------------------------------------
+For React components and pages, check:
 
-### 4. Chart Review
+**Structure:**
+- Functional components only — no class components
+- Files placed correctly in `components/`, `pages/`, `services/`, or `types/`
+- Dashboard logic stays inside `Dashboard.tsx`
 
-Check:
+**Components:**
+- `ColumnChart` is reusable with chart configuration inside the component
+- `PieChart` is reusable with chart configuration inside the component
+- `CountryFilter` is reusable
+- `TopToggle` is reusable
 
-Column Chart:
+### Step 6: Chart Review
 
-- Multiple countries supported
+For chart components, check:
+
+**Column Chart:**
+- Highcharts is used
+- Multiple country selection is supported
 - Checkbox filtering works
+- Dynamic updates are supported
 
-Pie Chart:
+**Pie Chart:**
+- Highcharts is used
+- Top 10 highest countries mode works
+- Top 10 lowest countries mode works
 
-- Top highest works
-- Top lowest works
+### Step 7: Code Quality Review
 
---------------------------------------------------
+For all files, check:
 
-### 5. Code Quality Review
-
-Check:
-
-- Clean functions
-- No duplicate logic
-- Readable code
+- No magic strings repeated across files — reusable values must be constants
+- Functions are readable and focused
 - No deeply nested logic
+- No duplicate logic across functions
+- `console.log` appears only inside `catch` blocks
 
---------------------------------------------------
+### Step 8: Write the Report
+
+Save results to **output_path**.
 
 ## Output Format
 
-Report must include:
+Write a JSON file with this structure:
 
-1. File name
-2. Problem
-3. Rule violated
-4. Severity
+```json
+{
+  "summary": {
+    "files_reviewed": 4,
+    "total_violations": 3,
+    "high": 1,
+    "medium": 1,
+    "low": 1
+  },
+  "violations": [
+    {
+      "file": "controllers/populationController.ts",
+      "rule": "Rule 2 — Backend Architecture: Controllers must be thin",
+      "violation": "Filtering logic found in controller — lines 34–51 filter by country directly instead of delegating to a service.",
+      "severity": "high",
+      "fix": "Move the filtering logic to populationService.ts and call the service method from the controller."
+    }
+  ],
+  "clean_files": [
+    "types/population.ts",
+    "constants/index.ts"
+  ]
+}
+```
 
-Severity:
+### Severity Definitions
 
-High:
-- Rule violation
+- **high** — Direct rule violation from `decisions.md`
+- **medium** — Code quality issue that degrades maintainability
+- **low** — Minor improvement opportunity
 
-Medium:
-- Quality issue
+## Guidelines
 
-Low:
-- Minor improvement
+- **Be specific**: Cite line numbers or code patterns when possible
+- **Be objective**: Base findings on the rules, not personal style
+- **No false positives**: Only report genuine violations
+- **Clean files**: Explicitly list files with no violations so reviewers know they were checked

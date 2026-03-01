@@ -4,6 +4,8 @@ import csv from "csv-parser";
 import { PopulationRecord, PopulationQueryParams, PopulationResponse } from "../types/population.types";
 import { GROUPS } from "../constants/groups";
 
+const ALL_VALID_COUNTRIES = new Set(Object.values(GROUPS).flat());
+
 let populationData: PopulationRecord[] = [];
 
 /**
@@ -23,7 +25,7 @@ export const loadPopulationData = (): Promise<void> => {
                 const popNum = Number(row["Population"]);
                 if (isNaN(popNum)) return;
 
-                if (row["Region"] === "WORLD") return;
+                if (!ALL_VALID_COUNTRIES.has(row["Region"])) return;
 
                 populationData.push({
                     country: row["Region"],
@@ -33,7 +35,7 @@ export const loadPopulationData = (): Promise<void> => {
                 });
             })
             .on("end", () => {
-                console.log("CSV Loaded Successfully");                
+                console.log(`CSV Loaded Successfully. Records: ${populationData.length}`);
                 resolve();
             })
             .on("error", (error) => reject(error));
@@ -54,182 +56,89 @@ export const getPopulationData = (
         startYear,
         endYear,
         limit,
-        sort
+        sort,
+        aggregate
     } = query;
 
-    let selectedCountries: string[] = [];
+    // Safe year calculation (Charts fundamentally only read the latest year)
+    const allYears = populationData.map(d => d.year);
+    const end = endYear ? Number(endYear) : (allYears.length > 0 ? Math.max(...allYears) : 2020);
+    const year = end;
 
-
-    // Countries priority
-
-    if (countries) {
-
-        selectedCountries = countries.split(",");
-
-    }
-    else if (group && GROUPS[group]) {
-
-        selectedCountries = [...GROUPS[group]];
-
-    }
-    else {
-
-        selectedCountries = [
-            ...new Set(
-                populationData
-                    .map(d => d.country)
-                    .filter(Boolean)
-            )
-
-        ] as string[];
-
-    }
-
-
-    // Safe year calculation
-
-    const allYears =
-        populationData.map(d => d.year);
-
-    const start =
-        startYear
-            ? Number(startYear)
-            : Math.min(...allYears);
-
-    const end =
-        endYear
-            ? Number(endYear)
-            : Math.max(...allYears);
-
-
-    // Filtering
-
-    const filtered =
-        populationData.filter(record =>
-
-            record.country &&
-            selectedCountries.includes(record.country) &&
-
-            record.year >= start &&
-            record.year <= end
-
-        );
-
-
-    // Pie Chart logic
-
-    if (limit || sort) {
-
-        const year = end;
-
-        let countryValues =
-            selectedCountries.map(country => {
-
-                const found =
-                    populationData.find(d =>
-
-                        d.country === country &&
-                        d.year === year
-
-                    );
-
-                return {
-
-                    country,
-
-                    value: found
-                        ? found.population
-                        : 0
-
-                };
-
+    // Fast-path: If aggregate=false, bypass processing and return a flat list of allowed countries for the UI Dropdown.
+    if (aggregate === "false") {
+        let allowedCountries = new Set<string>();
+        if (group) {
+            group.split(",").forEach(gName => {
+                if (GROUPS[gName]) {
+                    GROUPS[gName].forEach(c => allowedCountries.add(c));
+                }
             });
-
-
-        if (sort === "asc") {
-
-            countryValues.sort(
-                (a, b) => a.value - b.value
-            );
-
+        } else {
+            ALL_VALID_COUNTRIES.forEach(c => allowedCountries.add(c));
         }
 
-        if (sort === "desc") {
+        const resultSeries = Array.from(allowedCountries).map(country => ({
+            name: country,
+            data: []
+        }));
 
-            countryValues.sort(
-                (a, b) => b.value - a.value
-            );
-
-        }
-
-
-        const limited =
-            limit
-                ? countryValues.slice(
-                    0,
-                    Number(limit)
-                )
-                : countryValues;
-
-
-        return {
-
-            years: [year],
-
-            series:
-
-                limited.map(d => ({
-
-                    name: d.country,
-
-                    data: [d.value]
-
-                }))
-
-        };
-
+        return { years: [year], series: resultSeries };
     }
 
+    // Prepare chart values mapping
+    let chartValues: { name: string, value: number }[] = [];
 
-    // Normal chart
+    // Mode 1: User explicitly selected Countries
+    if (countries) {
+        let selectedCountries = countries.split(",");
 
-    const years =
-        [...new Set(filtered.map(d => d.year))]
-            .sort((a, b) => a - b);
+        // Strict Intersection: Keep it perfectly aligned to the regions
+        if (group) {
+            const allowedCountries = new Set<string>();
+            group.split(",").forEach(gName => {
+                if (GROUPS[gName]) GROUPS[gName].forEach(c => allowedCountries.add(c));
+            });
+            selectedCountries = selectedCountries.filter(c => allowedCountries.has(c));
+        }
 
-
-    const series =
-        selectedCountries.map(country => {
-
-            const countryData =
-                years.map(year => {
-
-                    const found =
-                        filtered.find(d =>
-
-                            d.country === country &&
-                            d.year === year
-
-                        );
-
-                    return found
-                        ? found.population
-                        : 0;
-
-                });
-
-
-            return {
-
-                name: country,
-
-                data: countryData
-
-            };
-
+        chartValues = selectedCountries.map(country => {
+            const found = populationData.find(d => d.country === country && d.year === year);
+            return { name: country, value: found ? found.population : 0 };
+        });
+    }
+    // Mode 2: User ONLY selected Regions (Filter to Top Countries within those Continents)
+    else if (group) {
+        const allowedCountries = new Set<string>();
+        group.split(",").forEach(gName => {
+            if (GROUPS[gName]) GROUPS[gName].forEach(c => allowedCountries.add(c));
         });
 
+        // Get population for all countries in the selected regions
+        chartValues = Array.from(allowedCountries).map(country => {
+            const found = populationData.find(d => d.country === country && d.year === year);
+            return { name: country, value: found ? found.population : 0 };
+        });
+    }
+    // Mode 3: Nothing selected (0 Regions). Return Empty State.
+    else {
+        return {
+            years: [year],
+            series: []
+        };
+    }
 
-    return { years, series };
+    // Apply Sort and Limit universally for Mode 1 & 2
+    if (sort === "asc") {
+        chartValues.sort((a, b) => a.value - b.value);
+    } else {
+        // Default to descending (highest population first) to ensure limits grab the most relevant countries
+        chartValues.sort((a, b) => b.value - a.value);
+    }
+    if (limit) chartValues = chartValues.slice(0, Number(limit));
 
+    return {
+        years: [year],
+        series: chartValues.map(d => ({ name: d.name, data: [d.value] }))
+    };
 };

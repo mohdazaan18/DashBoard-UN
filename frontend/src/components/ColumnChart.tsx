@@ -12,31 +12,37 @@ export const ColumnChart = ({ data }: Props) => {
             type: "column",
             backgroundColor: "transparent",
             style: { fontFamily: "inherit" },
-            marginTop: 60
+            height: "100%",
+            spacing: [30, 10, 40, 10], // top, right, bottom, left (increased top and bottom to fit labels)
         },
         title: {
             text: "Population Comparison",
-            style: { color: "#f8fafc", fontSize: "18px", fontWeight: "700" },
+            style: { color: "#f8fafc", fontSize: "15px", fontWeight: "700", letterSpacing: "0.5px" },
             align: "left",
-            margin: 30
+            margin: 15,
+            y: 10
         },
         xAxis: {
             categories: data.series.map(s => s.name),
             labels: {
-                style: { color: "#94a3b8", fontWeight: "500", fontSize: "12px" },
+                style: { color: "#94a3b8", fontWeight: "600", fontSize: "10px" },
                 rotation: -45,
+                step: 1, // force show all labels if possible
+                autoRotationLimit: 40,
             },
             lineColor: "#334155",
             tickColor: "#334155",
         },
         yAxis: {
-            title: { text: "Population", style: { color: "#64748b", fontWeight: "600" } },
+            title: { text: "Population", style: { color: "#64748b", fontWeight: "600", fontSize: "11px", letterSpacing: "0.5px" }, margin: 10 },
             labels: {
-                style: { color: "#94a3b8", fontWeight: "500" },
+                style: { color: "#94a3b8", fontWeight: "600", fontSize: "10px" },
                 formatter: function () {
                     return Number(this.value) >= 1000000
-                        ? (Number(this.value) / 1000000).toString() + "M"
-                        : String(this.value);
+                        ? (Number(this.value) / 1000000).toFixed(1) + "M"
+                        : Number(this.value) >= 1000
+                            ? (Number(this.value) / 1000).toFixed(1) + "K"
+                            : String(this.value);
                 },
             },
             gridLineColor: "#1e293b",
@@ -48,17 +54,50 @@ export const ColumnChart = ({ data }: Props) => {
             borderRadius: 12,
             style: { color: "#f8fafc" },
             headerFormat: '<span style="font-size: 13px; font-weight: 600; color: #94a3b8; padding-bottom: 4px; display: block;">{point.key}</span>',
-            pointFormat: '<span style="color:{point.color}; font-size: 16px;">\u25CF</span> {series.name}: <b style="font-size: 14px;">{point.y}</b> people'
+            formatter: function () {
+                const val = Number(this.y);
+                const formattedValue = val >= 1000000
+                    ? (val / 1000000).toFixed(1) + "M"
+                    : val >= 1000
+                        ? (val / 1000).toFixed(1) + "K"
+                        : String(val);
+
+                return `<span style="font-size: 13px; font-weight: 600; color: #94a3b8; padding-bottom: 4px; display: block;">${this.key}</span>` +
+                    `<span style="color:${this.color}; font-size: 16px;">\u25CF</span> <span style="color:#cbd5e1">Population:</span> ` +
+                    `<b style="font-size: 14px;">${formattedValue}</b> ` +
+                    `<span style="color:#64748b; font-size: 11px;">(${this.y?.toLocaleString()})</span>`;
+            }
         },
         plotOptions: {
             column: {
-                borderRadius: 6,
+                borderRadius: 4,
                 borderWidth: 0,
                 colorByPoint: true,
                 colors: [
                     "#6366f1", "#8b5cf6", "#d946ef", "#ec4899", "#f43f5e",
                     "#f97316", "#f59e0b", "#84cc16", "#10b981", "#06b6d4"
-                ]
+                ],
+                maxPointWidth: 50,
+                dataLabels: {
+                    enabled: true,
+                    formatter: function () {
+                        const val = Number(this.y);
+                        return val >= 1000000
+                            ? (val / 1000000).toFixed(1) + "M"
+                            : val >= 1000
+                                ? (val / 1000).toFixed(1) + "K"
+                                : String(val);
+                    },
+                    style: {
+                        color: "#f1f5f9",
+                        fontSize: "10px",
+                        fontWeight: "600",
+                        textOutline: "none",
+                        letterSpacing: "0.2px"
+                    },
+                    verticalAlign: 'bottom',
+                    y: -10 // shift label just above the column
+                }
             },
         },
         legend: { enabled: false },
@@ -71,9 +110,12 @@ export const ColumnChart = ({ data }: Props) => {
     };
 
     return (
-        <HighchartsReact
-            highcharts={Highcharts}
-            options={options}
-        />
+        <div className="absolute inset-x-2 inset-y-2">
+            <HighchartsReact
+                highcharts={Highcharts}
+                options={options}
+                containerProps={{ style: { height: "100%", width: "100%" } }}
+            />
+        </div>
     );
 };

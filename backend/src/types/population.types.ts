@@ -26,6 +26,8 @@ export interface PopulationQueryParams {
 
   sort?: "asc" | "desc";
 
+  aggregate?: string;
+
 }
 
 export interface PopulationResponse {
