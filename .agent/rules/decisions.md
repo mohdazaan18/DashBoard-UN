@@ -62,9 +62,10 @@ types/
 ## Rule 4 — Charts
 
 - Highcharts must be used for all charts
-- Two supported chart types:
+- Three supported chart types:
   - **Column Chart** — country comparison with multiple selection, checkbox filtering, and dynamic updates
   - **Pie Chart** — top 10 highest or top 10 lowest countries distribution
+  - **Gauge Chart** — mini gauge showing the top 1 country's population dominance as a percentage of the displayed total
 
 ---
 

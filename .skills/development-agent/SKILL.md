@@ -133,7 +133,17 @@ Generate a reusable `PieChart` component that:
 - Contains all Highcharts configuration internally
 - Supports **Top 10 Highest** and **Top 10 Lowest** modes
 
-### Step 8: TypeScript
+### Step 8: Frontend — Gauge Chart
+
+Generate a reusable `GaugeChart` component that:
+
+- Displays the top 1 country's population dominance as a percentage of the displayed total using Highcharts
+- Accepts a `dominancePercent` value and a `countryName` label as props
+- Contains all Highcharts configuration internally
+- Renders as a compact mini gauge — not a full-page chart
+- Updates dynamically whenever the active dataset or selection changes
+
+### Step 9: TypeScript
 
 Apply to all generated files:
 
@@ -142,7 +152,7 @@ Apply to all generated files:
 - No implicit types — all function parameters and return values must be typed
 - Import order: React → external libraries → internal imports
 
-### Step 9: Code Quality
+### Step 10: Code Quality
 
 Before finalising any file:
 
@@ -151,7 +161,7 @@ Before finalising any file:
 - Ensure no logic is duplicated across files
 - `console.log` only inside `catch` blocks
 
-### Step 10: Write Output Files
+### Step 11: Write Output Files
 
 Save all generated files to **output_path**, preserving the folder structure. For each file written, confirm its path and role.
 

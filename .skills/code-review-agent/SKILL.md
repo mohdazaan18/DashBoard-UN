@@ -74,6 +74,7 @@ For React components and pages, check:
 **Components:**
 - `ColumnChart` is reusable with chart configuration inside the component
 - `PieChart` is reusable with chart configuration inside the component
+- `GaugeChart` is reusable with chart configuration inside the component
 - `CountryFilter` is reusable
 - `TopToggle` is reusable
 
@@ -91,6 +92,12 @@ For chart components, check:
 - Highcharts is used
 - Top 10 highest countries mode works
 - Top 10 lowest countries mode works
+
+**Gauge Chart:**
+- Highcharts is used
+- Displays top 1 country's dominance as a percentage of the displayed total
+- Updates dynamically when the active dataset changes
+- Rendered as a compact mini gauge (not full-page)
 
 ### Step 7: Code Quality Review
 
