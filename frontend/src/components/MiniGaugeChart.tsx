@@ -1,6 +1,7 @@
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import type { PopulationResponse } from "../types/population.types";
+import { formatPopulation } from "../utils/formatPopulation";
 
 type Props = {
     data: PopulationResponse;
@@ -52,15 +53,8 @@ export const MiniGaugeChart = ({ data }: Props) => {
             borderRadius: 12,
             style: { color: "#f8fafc" },
             formatter: function () {
-                const val = Number(this.y);
-                const formattedValue = val >= 1000000
-                    ? (val / 1000000).toFixed(1) + "M"
-                    : val >= 1000
-                        ? (val / 1000).toFixed(1) + "K"
-                        : String(val);
-
                 return `<b style="font-size:13px">${this.key}</b><br/>` +
-                    `<span style="color:#cbd5e1">Population:</span> <b style="font-size: 14px;">${formattedValue}</b>`;
+                    `<span style="color:#cbd5e1">Population:</span> <b style="font-size: 14px;">${formatPopulation(Number(this.y))}</b>`;
             }
         },
         plotOptions: {

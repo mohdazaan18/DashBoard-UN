@@ -1,6 +1,7 @@
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import type { PopulationResponse } from "../types/population.types";
+import { formatPopulation, formatExactPopulation } from "../utils/formatPopulation";
 
 type Props = {
     data: PopulationResponse;
@@ -28,17 +29,12 @@ export const PieChart = ({ data }: Props) => {
             borderRadius: 12,
             style: { color: "#f8fafc" },
             headerFormat: "",
+            useHTML: true,
             formatter: function () {
-                const val = Number(this.y);
-                const formattedValue = val >= 1000000
-                    ? (val / 1000000).toFixed(1) + "M"
-                    : val >= 1000
-                        ? (val / 1000).toFixed(1) + "K"
-                        : String(val);
-
+                const raw = Number(this.y);
                 return `<span style="color:${this.color}; font-size: 16px;">\u25CF</span> <b>${this.key}</b><br/>` +
-                    `<span style="color:#cbd5e1">Population:</span> <b style="font-size: 14px;">${formattedValue}</b> ` +
-                    `<span style="color:#64748b; font-size: 11px;">(${this.y?.toLocaleString()})</span><br/>` +
+                    `<span style="color:#cbd5e1">Population:</span> <b style="font-size: 14px;">${formatPopulation(raw)}</b> ` +
+                    `<span style="color:#64748b; font-size: 11px;">(${formatExactPopulation(raw)})</span><br/>` +
                     `<span style="color:#cbd5e1">Share:</span> <b>${this.percentage?.toFixed(1)}%</b>`;
             }
         },
@@ -53,14 +49,7 @@ export const PieChart = ({ data }: Props) => {
                     enabled: true,
                     distance: 10,
                     formatter: function () {
-                        const val = Number(this.y);
-                        const formattedValue = val >= 1000000
-                            ? (val / 1000000).toFixed(1) + "M"
-                            : val >= 1000
-                                ? (val / 1000).toFixed(1) + "K"
-                                : String(val);
-
-                        return `<b>${this.key}</b><br/>${formattedValue} (${this.percentage?.toFixed(1)}%)`;
+                        return `<b>${this.key}</b><br/>${formatPopulation(Number(this.y))} (${this.percentage?.toFixed(1)}%)`;
                     },
                     style: {
                         color: "#f1f5f9",

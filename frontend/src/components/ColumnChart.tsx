@@ -1,6 +1,7 @@
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import type { PopulationResponse } from "../types/population.types";
+import { formatPopulation, formatExactPopulation } from "../utils/formatPopulation";
 
 type Props = {
     data: PopulationResponse;
@@ -13,7 +14,7 @@ export const ColumnChart = ({ data }: Props) => {
             backgroundColor: "transparent",
             style: { fontFamily: "inherit" },
             height: "100%",
-            spacing: [30, 10, 60, 10], // top, right, bottom, left (massive bottom spacing)
+            spacing: [30, 10, 60, 10],
         },
         title: {
             text: "Population Comparison",
@@ -33,7 +34,6 @@ export const ColumnChart = ({ data }: Props) => {
                 },
                 rotation: -45,
                 autoRotationLimit: 40,
-                // Removed 'step: 1' so Highcharts can auto-hide overlapping labels intelligently
             },
             lineColor: "#334155",
             tickColor: "#334155",
@@ -43,11 +43,7 @@ export const ColumnChart = ({ data }: Props) => {
             labels: {
                 style: { color: "#94a3b8", fontWeight: "600", fontSize: "10px" },
                 formatter: function () {
-                    return Number(this.value) >= 1000000
-                        ? (Number(this.value) / 1000000).toFixed(1) + "M"
-                        : Number(this.value) >= 1000
-                            ? (Number(this.value) / 1000).toFixed(1) + "K"
-                            : String(this.value);
+                    return formatPopulation(Number(this.value));
                 },
             },
             gridLineColor: "#1e293b",
@@ -58,19 +54,13 @@ export const ColumnChart = ({ data }: Props) => {
             borderColor: "#334155",
             borderRadius: 12,
             style: { color: "#f8fafc" },
-            headerFormat: '<span style="font-size: 13px; font-weight: 600; color: #94a3b8; padding-bottom: 4px; display: block;">{point.key}</span>',
+            useHTML: true,
             formatter: function () {
-                const val = Number(this.y);
-                const formattedValue = val >= 1000000
-                    ? (val / 1000000).toFixed(1) + "M"
-                    : val >= 1000
-                        ? (val / 1000).toFixed(1) + "K"
-                        : String(val);
-
+                const raw = Number(this.y);
                 return `<span style="font-size: 13px; font-weight: 600; color: #94a3b8; padding-bottom: 4px; display: block;">${this.key}</span>` +
                     `<span style="color:${this.color}; font-size: 16px;">\u25CF</span> <span style="color:#cbd5e1">Population:</span> ` +
-                    `<b style="font-size: 14px;">${formattedValue}</b> ` +
-                    `<span style="color:#64748b; font-size: 11px;">(${this.y?.toLocaleString()})</span>`;
+                    `<b style="font-size: 14px;">${formatPopulation(raw)}</b> ` +
+                    `<span style="color:#64748b; font-size: 11px;">(${formatExactPopulation(raw)})</span>`;
             }
         },
         plotOptions: {
@@ -86,12 +76,7 @@ export const ColumnChart = ({ data }: Props) => {
                 dataLabels: {
                     enabled: true,
                     formatter: function () {
-                        const val = Number(this.y);
-                        return val >= 1000000
-                            ? (val / 1000000).toFixed(1) + "M"
-                            : val >= 1000
-                                ? (val / 1000).toFixed(1) + "K"
-                                : String(val);
+                        return formatPopulation(Number(this.y));
                     },
                     style: {
                         color: "#f1f5f9",
@@ -101,7 +86,7 @@ export const ColumnChart = ({ data }: Props) => {
                         letterSpacing: "0.2px"
                     },
                     verticalAlign: 'bottom',
-                    y: -10 // shift label just above the column
+                    y: -10
                 }
             },
         },
