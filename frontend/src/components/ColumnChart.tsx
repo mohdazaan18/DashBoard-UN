@@ -13,7 +13,7 @@ export const ColumnChart = ({ data }: Props) => {
             backgroundColor: "transparent",
             style: { fontFamily: "inherit" },
             height: "100%",
-            spacing: [30, 10, 40, 10], // top, right, bottom, left (increased top and bottom to fit labels)
+            spacing: [30, 10, 60, 10], // top, right, bottom, left (massive bottom spacing)
         },
         title: {
             text: "Population Comparison",
@@ -25,10 +25,15 @@ export const ColumnChart = ({ data }: Props) => {
         xAxis: {
             categories: data.series.map(s => s.name),
             labels: {
-                style: { color: "#94a3b8", fontWeight: "600", fontSize: "10px" },
+                style: {
+                    color: "#94a3b8",
+                    fontWeight: "600",
+                    fontSize: "10px",
+                    textOverflow: "ellipsis"
+                },
                 rotation: -45,
-                step: 1, // force show all labels if possible
                 autoRotationLimit: 40,
+                // Removed 'step: 1' so Highcharts can auto-hide overlapping labels intelligently
             },
             lineColor: "#334155",
             tickColor: "#334155",
