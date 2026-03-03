@@ -4,6 +4,7 @@ import { PieChart } from "../components/PieChart";
 import { MiniGaugeChart } from "../components/MiniGaugeChart";
 import { MultiSelectDropdown } from "../components/MultiSelectDropdown";
 import { SingleSelectDropdown } from "../components/SingleSelectDropdown";
+import { GROUPS } from "../constants/groups";
 
 import {
     fetchPopulation,
@@ -22,9 +23,6 @@ export const Dashboard = () => {
         years: [], series: []
     });
 
-    const [countries, setCountries] = useState<string[]>([]);
-
-    // Memoized constant regions to populate dropdown options
     const regionOptions = useMemo(() => [
         { label: "Africa", value: "Africa" },
         { label: "Americas", value: "Americas" },
@@ -34,41 +32,33 @@ export const Dashboard = () => {
         { label: "Antarctic", value: "Antarctic" }
     ], []);
 
-    // Default to all regions selected as requested
     const [selectedRegions, setSelectedRegions] = useState<string[]>(
         regionOptions.map(r => r.value)
     );
 
     const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
-
-    // New API filter states
-    const [limit, setLimit] = useState<number | "">(10); // Default to Top 10 to avoid charts overflowing
+    const [limit, setLimit] = useState<number | "">(10);
     const [sort, setSort] = useState<"asc" | "desc" | "">("");
-
-    const countryOptions = useMemo(() => {
-        return countries.map(c => ({ label: c, value: c }));
-    }, [countries]);
 
     // Derived param for API calls
     const groupParam = selectedRegions.join(",");
 
-    // Load available countries for the filter dropdown whenever the groups change
-    useEffect(() => {
-        if (selectedRegions.length === 0) {
-            setCountries([]);
-            setSelectedCountries([]);
-            return;
-        }
-
-        // Pass empty limit and sort so we fetch ALL countries inside the selected groups
-        fetchPopulation(groupParam, "", "", false).then(res => {
-            const allCountries = res.series.map(s => s.name);
-            setCountries(allCountries);
-
-            // CRITICAL FIX: If a Region is unselected, we must remove any of its countries from the active selection
-            setSelectedCountries(prev => prev.filter(c => allCountries.includes(c)));
+    // Synchronously derive available countries from local GROUPS — instant, no API roundtrip
+    const countries = useMemo(() => {
+        if (selectedRegions.length === 0) return [];
+        const result = new Set<string>();
+        selectedRegions.forEach(region => {
+            (GROUPS[region] ?? []).forEach(c => result.add(c));
         });
-    }, [groupParam, selectedRegions.length]);
+        return Array.from(result).sort();
+    }, [selectedRegions]);
+
+    const countryOptions = useMemo(() => countries.map(c => ({ label: c, value: c })), [countries]);
+
+    // When regions change, purge selected countries that no longer belong to any active region
+    useEffect(() => {
+        setSelectedCountries(prev => prev.filter(c => countries.includes(c)));
+    }, [countries]);
 
     // Unified Chart Fetching: Apply global filters to both Column and Pie Charts simultaneously
     useEffect(() => {
